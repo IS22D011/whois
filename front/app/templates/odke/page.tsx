@@ -2,6 +2,9 @@
 
 import React, { useEffect, useState, useRef } from 'react';
 import { FaPhoneAlt, FaEnvelope, FaLinkedin, FaGithub, FaFacebook, FaGraduationCap, FaHome } from 'react-icons/fa';
+import Header from '../../../components/footer';
+import Footer from '../../../components/headers';
+
 
 const LightCV: React.FC = () => {
   const [data, setData] = useState<any>(null);
