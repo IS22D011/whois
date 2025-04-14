@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+import { useForm, useFieldArray } from "react-hook-form";
 import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
@@ -15,89 +15,87 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 
-// 📌 Формын баталгаажуулалтын схем
+// 🧠 Баталгаажуулалтын схем
 const formSchema = z.object({
   firstname: z.string().min(2, { message: "First name is required" }),
   lastname: z.string().min(2, { message: "Last name is required" }),
-  headline: z.string().optional(),
-  address: z.string().optional(),
-  phone: z.string().optional(),
   email: z.string().email({ message: "Invalid email address" }),
-  linkedin: z.string().optional(),
-  github: z.string().optional(),
-  facebook: z.string().optional(),
-  city: z.string().optional(),
   summary: z.string().optional(),
-  education: z.array(
-    z.object({
-      institution: z.string().min(2, { message: "Institution name required" }),
-      start_year: z.number().min(1900).max(new Date().getFullYear()),
-    })
-  ),
-  experience: z.array(
-    z.object({
-      job_title: z.string().min(2, { message: "Job title required" }),
-      company: z.string().min(2, { message: "Company name required" }),
-      location: z.string().optional(),
-      start_date: z.string().optional(),
-      end_date: z.string().optional(),
-      responsibilities: z.array(z.string().optional()),
-    })
-  ),
-  skills: z.array(
-    z.object({
-      skill: z.string().min(2, { message: "Skill name required" }),
-      proficiency: z.number().min(1).max(5),
-    })
-  ),
+  education: z
+    .array(
+      z.object({
+        institution: z.string().min(2, { message: "Institution name required" }),
+        start_year: z
+          .number({ invalid_type_error: "Start year must be a number" })
+          .min(1900)
+          .max(new Date().getFullYear()),
+      })
+    )
+    .optional(),
+  experience: z
+    .array(
+      z.object({
+        job_title: z.string().min(2, { message: "Job title required" }),
+        company: z.string().min(2, { message: "Company name required" }),
+      })
+    )
+    .optional(),
+  skills: z
+    .array(
+      z.object({
+        skill: z.string().min(2, { message: "Skill name required" }),
+        proficiency: z.coerce.number({ invalid_type_error: "Must be a number between 1 and 5" })
+          .min(1)
+          .max(5),
+      })
+    )
+    .optional(),
 });
 
+type FormData = z.infer<typeof formSchema>;
+
 export default function FormPage() {
-  const form = useForm({
+  const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       firstname: "",
       lastname: "",
-      headline: "",
-      address: "",
-      phone: "",
       email: "",
-      linkedin: "",
-      github: "",
-      facebook: "",
-      city: "",
       summary: "",
-      education: [
-        { institution: "", start_year: 2020 },  // Default start_year added
-      ],
-      experience: [
-        {
-          job_title: "",
-          company: "",
-          location: "",
-          start_date: "",
-          end_date: "",
-          responsibilities: [],
-        },
-      ],
-      skills: [
-        {
-          skill: "",
-          proficiency: 3
-        },
-      ],
+      education: [],
+      experience: [],
+      skills: [],
     },
   });
 
-  function onSubmit(values: any) {
-    console.log("Form Submitted:", values);
-  }
+  const { control, handleSubmit } = form;
+
+  const { fields: educationFields, append: addEducation, remove: removeEducation } = useFieldArray({
+    control,
+    name: "education",
+  });
+
+  const { fields: experienceFields, append: addExperience, remove: removeExperience } =
+    useFieldArray({
+      control,
+      name: "experience",
+    });
+
+  const { fields: skillFields, append: addSkill, remove: removeSkill } = useFieldArray({
+    control,
+    name: "skills",
+  });
+
+  const onSubmit = (values: FormData) => {
+    console.log("✅ Form Submitted:", values);
+  };
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        {/* 🧍‍♂️ Хувийн мэдээлэл */}
         <FormField
-          control={form.control}
+          control={control}
           name="firstname"
           render={({ field }) => (
             <FormItem>
@@ -109,7 +107,7 @@ export default function FormPage() {
           )}
         />
         <FormField
-          control={form.control}
+          control={control}
           name="lastname"
           render={({ field }) => (
             <FormItem>
@@ -121,101 +119,150 @@ export default function FormPage() {
           )}
         />
         <FormField
-          control={form.control}
+          control={control}
           name="email"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Email</FormLabel>
               <FormControl>
-                <Input placeholder="Email" type="email" {...field} />
+                <Input type="email" placeholder="Email" {...field} />
               </FormControl>
             </FormItem>
           )}
         />
         <FormField
-          control={form.control}
+          control={control}
           name="summary"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Summary</FormLabel>
               <FormControl>
-                <Textarea placeholder="Summary about you" {...field} />
+                <Textarea placeholder="About you" {...field} />
               </FormControl>
             </FormItem>
           )}
         />
 
         {/* 🎓 Боловсрол */}
-        {form.watch("education").map((edu, index) => (
-          <div key={index}>
-            <FormField
-              control={form.control}
-              name={`education.${index}.institution`}
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Institution</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Institution" {...field} />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name={`education.${index}.start_year`}
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Start Year</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      placeholder="Start Year"
-                      {...field}
-                    />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-          </div>
-        ))}
+        <div className="space-y-4">
+          <h2 className="text-lg font-semibold">Education</h2>
+          {educationFields.map((field, index) => (
+            <div key={field.id} className="space-y-2 border p-4 rounded">
+              <FormField
+                control={control}
+                name={`education.${index}.institution`}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Institution</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Institution" {...field} />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={control}
+                name={`education.${index}.start_year`}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Start Year</FormLabel>
+                    <FormControl>
+                      <Input type="number" placeholder="2020" {...field} />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              <Button variant="destructive" type="button" onClick={() => removeEducation(index)}>
+                Remove
+              </Button>
+            </div>
+          ))}
+          <Button type="button" onClick={() => addEducation({ institution: "", start_year: 2024 })}>
+            Add Education
+          </Button>
+        </div>
 
         {/* 💼 Ажлын туршлага */}
-        {form.watch("experience").map((exp, index) => (
-          <div key={index}>
-            <FormField
-              control={form.control}
-              name={`experience.${index}.job_title`}
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Job Title</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Job Title" {...field} />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-          </div>
-        ))}
+        <div className="space-y-4">
+          <h2 className="text-lg font-semibold">Experience</h2>
+          {experienceFields.map((field, index) => (
+            <div key={field.id} className="space-y-2 border p-4 rounded">
+              <FormField
+                control={control}
+                name={`experience.${index}.job_title`}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Job Title</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Software Engineer" {...field} />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={control}
+                name={`experience.${index}.company`}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Company</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Company Name" {...field} />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              <Button variant="destructive" type="button" onClick={() => removeExperience(index)}>
+                Remove
+              </Button>
+            </div>
+          ))}
+          <Button type="button" onClick={() => addExperience({ job_title: "", company: "" })}>
+            Add Experience
+          </Button>
+        </div>
 
         {/* 🛠 Чадварууд */}
-        {form.watch("skills").map((skill, index) => (
-          <div key={index}>
-            <FormField
-              control={form.control}
-              name={`skills.${index}.skill`}
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Skill</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Skill" {...field} />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-          </div>
-        ))}
+        <div className="space-y-4">
+          <h2 className="text-lg font-semibold">Skills</h2>
+          {skillFields.map((field, index) => (
+            <div key={field.id} className="space-y-2 border p-4 rounded">
+              <FormField
+                control={control}
+                name={`skills.${index}.skill`}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Skill</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g. React" {...field} />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={control}
+                name={`skills.${index}.proficiency`}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Proficiency (1-5)</FormLabel>
+                    <FormControl>
+                      <Input type="number" min={1} max={5} {...field} />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              <Button variant="destructive" type="button" onClick={() => removeSkill(index)}>
+                Remove
+              </Button>
+            </div>
+          ))}
+          <Button type="button" onClick={() => addSkill({ skill: "", proficiency: 1 })}>
+            Add Skill
+          </Button>
+        </div>
 
-        <Button type="submit">Submit</Button>
+        <Button type="submit" className="w-full">
+          Submit
+        </Button>
       </form>
     </Form>
   );
