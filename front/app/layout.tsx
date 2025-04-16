@@ -34,7 +34,7 @@ function Header() {
               Login
             </button>
           </Link>
-          <Link href="/signup">
+          <Link href="/register">
             <button className="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-full">
               Sign Up
             </button>
